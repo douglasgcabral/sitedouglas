@@ -1,0 +1,1360 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Douglas Cabral - Soluções em TI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        /* Variáveis CSS */
+        :root {
+            --primary-bg-color: #1a202c;
+            --secondary-bg-color: #2d3748;
+            --accent-color: #ff8c00;
+            --text-color: #ffffff;
+            --light-text-color: #cbd5e0;
+            --border-color: #4a5568;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--primary-bg-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            overflow: hidden;
+            padding: 20px 0;
+        }
+
+        /* Header */
+        header {
+            background: var(--secondary-bg-color);
+            color: var(--text-color);
+            padding: 1rem 0;
+            border-bottom: 3px solid var(--accent-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        header .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        header nav ul {
+            list-style: none;
+            display: flex;
+        }
+
+        header nav ul li {
+            margin-left: 20px;
+        }
+
+        header nav ul li a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 5px 0;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        header nav ul li a i {
+            margin-right: 8px;
+            color: var(--accent-color);
+        }
+
+        header nav ul li a:hover,
+        header nav ul li a.active {
+            color: var(--accent-color);
+        }
+
+        /* Páginas */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            background: var(--primary-bg-color);
+        }
+
+        .hero .icon-large {
+            font-size: 5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            color: var(--light-text-color);
+        }
+
+        /* General Section Styling */
+        section {
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        section h1 {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        section .subtitle {
+            font-size: 1.2rem;
+            color: var(--light-text-color);
+            margin-bottom: 40px;
+        }
+
+        /* Service Overview Section (Index Page) */
+        #services-overview .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            text-align: left;
+        }
+
+        .service-item {
+            background: var(--secondary-bg-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .service-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .service-item .icon-small {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .service-item h2 {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .service-item ul {
+            list-style: none;
+        }
+
+        .service-item ul li {
+            margin-bottom: 10px;
+            color: var(--light-text-color);
+        }
+
+        /* Contact Info Short Section (Index Page) */
+        #contact-info-short {
+            background: var(--secondary-bg-color);
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+
+        #contact-info-short .container p {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        #contact-info-short .container p i {
+            color: var(--accent-color);
+            margin-right: 10px;
+        }
+
+        /* Call to Action Section */
+        #call-to-action {
+            background: var(--primary-bg-color);
+            padding: 80px 0;
+        }
+
+        #call-to-action h2 {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        #call-to-action p {
+            font-size: 1.2rem;
+            color: var(--light-text-color);
+            margin-bottom: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons .btn {
+            display: inline-block;
+            background: var(--accent-color);
+            color: var(--text-color);
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 0 10px;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .cta-buttons .btn-secondary {
+            background: var(--secondary-bg-color);
+            border: 2px solid var(--accent-color);
+        }
+
+        .cta-buttons .btn-primary:hover {
+            background: #e67e00;
+        }
+
+        .cta-buttons .btn-secondary:hover {
+            background: var(--accent-color);
+            color: var(--text-color);
+        }
+
+        /* Expertise Section (About Page) */
+        #expertise .icon-large {
+            font-size: 4rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        #expertise .card-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        #expertise .card {
+            background: var(--secondary-bg-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: left;
+        }
+
+        #expertise .card .icon-small {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        #expertise .card h2 {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        #expertise .card p {
+            color: var(--light-text-color);
+            margin-bottom: 10px;
+        }
+
+        #expertise .grid-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .grid-card {
+            background: var(--secondary-bg-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: left;
+        }
+
+        .grid-card .icon-small {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .grid-card h3 {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .grid-card ul {
+            list-style: none;
+        }
+
+        .grid-card ul li {
+            color: var(--light-text-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .grid-card ul li i {
+            color: var(--accent-color);
+            margin-right: 10px;
+        }
+
+        .why-choose-us {
+            background: var(--secondary-bg-color);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 60px;
+        }
+
+        .why-choose-us h2 {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin-bottom: 30px;
+        }
+
+        .why-choose-us .reasons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            text-align: left;
+        }
+
+        .why-choose-us .reasons-grid h4 {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .why-choose-us .reasons-grid p {
+            color: var(--light-text-color);
+        }
+
+        /* Services Page */
+        #our-services .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            text-align: left;
+        }
+
+        .service-card {
+            background: var(--secondary-bg-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .service-card .icon-small {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+
+        .service-card h2 {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .service-card p {
+            color: var(--light-text-color);
+            margin-bottom: 20px;
+        }
+
+        .service-card ul {
+            list-style: none;
+        }
+
+        .service-card ul li {
+            color: var(--light-text-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .service-card ul li i {
+            color: var(--accent-color);
+            margin-right: 10px;
+        }
+
+        .cta-bottom {
+            background: var(--secondary-bg-color);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 60px;
+        }
+
+        .cta-bottom h2 {
+            font-size: 2rem;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .cta-bottom p {
+            font-size: 1.1rem;
+            color: var(--light-text-color);
+            margin-bottom: 30px;
+        }
+
+        /* Contact Page */
+        #contact .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            text-align: left;
+        }
+
+        #contact .contact-info-card,
+        #contact .contact-form-card,
+        #contact .why-choose-us-card {
+            background: var(--secondary-bg-color);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #contact .contact-info-card h2,
+        #contact .contact-form-card h2,
+        #contact .why-choose-us-card h2 {
+            font-size: 1.8rem;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        #contact .contact-info-card p {
+            color: var(--light-text-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        #contact .contact-info-card p i {
+            color: var(--accent-color);
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        #contact .contact-form-card .form-group {
+            margin-bottom: 20px;
+        }
+
+        #contact .contact-form-card label {
+            display: block;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        #contact .contact-form-card input[type="text"],
+        #contact .contact-form-card input[type="tel"],
+        #contact .contact-form-card input[type="email"],
+        #contact .contact-form-card textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        #contact .contact-form-card input::placeholder,
+        #contact .contact-form-card textarea::placeholder {
+            color: var(--light-text-color);
+            opacity: 0.7;
+        }
+
+        #contact .contact-form-card textarea {
+            resize: vertical;
+        }
+
+        #contact .contact-form-card .btn {
+            width: auto;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #contact .contact-form-card .btn i {
+            margin-right: 10px;
+        }
+
+        #contact .why-choose-us-card {
+            grid-column: 1 / 3;
+            margin-top: 30px;
+        }
+
+        #contact .why-choose-us-card ul {
+            list-style: none;
+        }
+
+        #contact .why-choose-us-card ul li {
+            color: var(--light-text-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        #contact .why-choose-us-card ul li i {
+            color: var(--accent-color);
+            margin-right: 10px;
+        }
+
+        /* Portfolio Page */
+        #portfolio {
+            padding: 80px 0;
+        }
+
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .portfolio-item {
+            background: var(--secondary-bg-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .portfolio-item:hover {
+            transform: translateY(-10px);
+        }
+
+        .portfolio-img {
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .portfolio-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .portfolio-item:hover .portfolio-img img {
+            transform: scale(1.1);
+        }
+
+        .portfolio-content {
+            padding: 25px;
+        }
+
+        .portfolio-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .portfolio-content p {
+            color: var(--light-text-color);
+            margin-bottom: 15px;
+        }
+
+        .portfolio-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .portfolio-tag {
+            background: rgba(255, 140, 0, 0.2);
+            color: var(--accent-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .portfolio-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--accent-color);
+            font-weight: bold;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .portfolio-link i {
+            margin-left: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .portfolio-link:hover {
+            color: #ffa64d;
+        }
+
+        .portfolio-link:hover i {
+            transform: translateX(5px);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--secondary-bg-color);
+            padding: 40px 0;
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .social-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(255, 140, 0, 0.4);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: var(--light-text-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .copyright {
+            color: var(--light-text-color);
+            font-size: 0.9rem;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            header .container {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            header nav ul {
+                margin-top: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            header nav ul li {
+                margin: 0 10px 10px 10px;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.2rem;
+            }
+
+            #services-overview .container,
+            #expertise .card-section,
+            #expertise .grid-section,
+            #our-services .services-grid,
+            #contact .contact-grid,
+            .portfolio-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-buttons .btn {
+                display: block;
+                margin: 15px auto;
+            }
+
+            #contact .why-choose-us-card {
+                grid-column: auto;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">Douglas Cabral</div>
+            <nav>
+                <ul>
+                    <li><a href="#" onclick="showPage('inicio')" class="nav-link active"><i class="fas fa-home"></i> Início</a></li>
+                    <li><a href="#" onclick="showPage('sobre')" class="nav-link"><i class="fas fa-user"></i> Sobre</a></li>
+                    <li><a href="#" onclick="showPage('servicos')" class="nav-link"><i class="fas fa-briefcase"></i> Serviços</a></li>
+                    <li><a href="#" onclick="showPage('portfolio')" class="nav-link"><i class="fas fa-folder-open"></i> Portfólio</a></li>
+                    <li><a href="#" onclick="showPage('contato')" class="nav-link"><i class="fas fa-envelope"></i> Contato</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- PÁGINA INÍCIO -->
+    <div id="inicio" class="page active">
+        <main>
+            <section class="hero">
+                <div class="container">
+                    <div class="hero-content">
+                        <i class="fas fa-desktop icon-large"></i>
+                        <h1>SOLUÇÕES EM TI</h1>
+                        <p>INFRAESTRUTURA | SUPORTE | DEVOPS | AUTOMAÇÃO</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="services-overview">
+                <div class="container">
+                    <div class="service-item">
+                        <i class="fas fa-server icon-small"></i>
+                        <h2>INFRAESTRUTURA & SUPORTE</h2>
+                        <ul>
+                            <li>Montagem e Manutenção de Computadores e Notebooks</li>
+                            <li>Instalação e Configuração de Softwares</li>
+                        </ul>
+                    </div>
+                    <div class="service-item">
+                        <i class="fas fa-network-wired icon-small"></i>
+                        <h2>REDES & SEGURANÇA</h2>
+                        <ul>
+                            <li>Redes Estruturadas e Wi-Fi</li>
+                            <li>Montagem de Rack, Switches e Cabeamento</li>
+                            <li>Firewall e Segurança</li>
+                        </ul>
+                    </div>
+                    <div class="service-item">
+                        <i class="fas fa-chart-line icon-small"></i>
+                        <h2>MONITORAMENTO & AUTOMAÇÃO</h2>
+                        <ul>
+                            <li>Zabbix e Grafana</li>
+                            <li>Ansible & Automação</li>
+                            <li>Docker / Docker Compose</li>
+                        </ul>
+                    </div>
+                    <div class="service-item">
+                        <i class="fas fa-database icon-small"></i>
+                        <h2>ARMAZENAMENTO & BACKUP</h2>
+                        <ul>
+                            <li>Backup de Dados</li>
+                            <li>Storage / NAS</li>
+                        </ul>
+                    </div>
+                    <div class="service-item">
+                        <i class="fas fa-globe icon-small"></i>
+                        <h2>DESENVOLVIMENTO DE SITES</h2>
+                        <ul>
+                            <li>Desenvolvimento de Sites</li>
+                            <li>Manutenção</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact-info-short">
+                <div class="container">
+                    <p><i class="fas fa-phone"></i> (11) 95967-1271</p>
+                    <p><i class="fas fa-envelope"></i> cabral.douglas@gmail.com</p>
+                </div>
+            </section>
+
+            <section id="call-to-action">
+                <div class="container">
+                    <h2>Precisa de Soluções em TI?</h2>
+                    <p>Transforme sua infraestrutura de TI com soluções modernas, seguras e escaláveis para impulsionar o crescimento do seu negócio.</p>
+                    <div class="cta-buttons">
+                        <button class="btn btn-primary" onclick="showPage('sobre')">Nossa Expertise >></button>
+                        <button class="btn btn-secondary" onclick="showPage('servicos')">Ver Todos os Serviços</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PÁGINA SOBRE -->
+    <div id="sobre" class="page">
+        <main>
+            <section id="expertise">
+                <div class="container">
+                    <i class="fas fa-file-alt icon-large"></i>
+                    <h1>Nossa Expertise</h1>
+                    <p class="subtitle">Especialistas em soluções tecnológicas para empresas modernas</p>
+
+                    <div class="card-section">
+                        <div class="card">
+                            <i class="fas fa-rocket icon-small"></i>
+                            <h2>Nossa Missão</h2>
+                            <p>Transformar desafios tecnológicos em oportunidades de crescimento para empresas de todos os portes. Oferecemos soluções integradas em TI que combinam inovação, eficiência e confiabilidade.</p>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-chart-line icon-small"></i>
+                            <h2>Nossa Experiência</h2>
+                            <p>Com mais de uma década no mercado de tecnologia, oferecemos expertise completa em infraestrutura, suporte técnico especializado e soluções DevOps avançadas.</p>
+                            <p>Nossos serviços abrangem desde a administração de servidores e virtualização até a implementação de soluções em nuvem e automação de processos empresariais.</p>
+                        </div>
+                        <div class="card">
+                            <i class="fas fa-brain icon-small"></i>
+                            <h2>Inovação em IA</h2>
+                            <p>Desenvolvemos e integramos soluções de inteligência artificial personalizadas para otimizar processos empresariais. Nossa equipe trabalha com as mais recentes tecnologias e APIs para criar soluções eficientes e escaláveis.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid-section">
+                        <div class="grid-card">
+                            <i class="fas fa-code icon-small"></i>
+                            <h3>DevOps & Automação</h3>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Automação de Processos</li>
+                                <li><i class="fas fa-check-circle"></i> Ansible & Automação</li>
+                                <li><i class="fas fa-check-circle"></i> Monitoramento Avançado</li>
+                                <li><i class="fas fa-check-circle"></i> Automação de Processos</li>
+                            </ul>
+                        </div>
+                        <div class="grid-card">
+                            <i class="fas fa-cloud icon-small"></i>
+                            <h3>Cloud & Virtualização</h3>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Azure & Google Cloud</li>
+                                <li><i class="fas fa-check-circle"></i> VMWare & Hyper-V</li>
+                                <li><i class="fas fa-check-circle"></i> Migração para Nuvem</li>
+                                <li><i class="fas fa-check-circle"></i> Projetos Híbridos</li>
+                            </ul>
+                        </div>
+                        <div class="grid-card">
+                            <i class="fas fa-server icon-small"></i>
+                            <h3>Infraestrutura</h3>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Servidores Windows & Linux</li>
+                                <li><i class="fas fa-check-circle"></i> Gerenciamento de Redes</li>
+                                <li><i class="fas fa-check-circle"></i> Suporte Especializado</li>
+                                <li><i class="fas fa-check-circle"></i> Backup & Segurança</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="why-choose-us">
+                        <h2>Por Que Nos Escolher?</h2>
+                        <div class="reasons-grid">
+                            <div>
+                                <h4>Experiência Comprovada</h4>
+                                <p>Mais de 10 anos transformando empresas através da tecnologia.</p>
+                            </div>
+                            <div>
+                                <h4>Soluções Personalizadas</h4>
+                                <p>Cada projeto é único e recebe atenção especializada.</p>
+                            </div>
+                            <div>
+                                <h4>Suporte Contínuo</h4>
+                                <p>Acompanhamento constante para garantir o sucesso dos projetos.</p>
+                            </div>
+                            <div>
+                                <h4>Tecnologia de Ponta</h4>
+                                <p>Sempre utilizamos as melhores práticas e ferramentas do mercado.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PÁGINA SERVIÇOS -->
+    <div id="servicos" class="page">
+        <main>
+            <section id="our-services">
+                <div class="container">
+                    <h1>Nossos Serviços</h1>
+                    <p class="subtitle">Soluções completas em tecnologia da informação para impulsionar seu negócio</p>
+
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <i class="fas fa-server icon-small"></i>
+                            <h2>INFRAESTRUTURA & SUPORTE</h2>
+                            <p>Soluções completas para sua infraestrutura de TI</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Montagem e Manutenção de Computadores e Notebooks</li>
+                                <li><i class="fas fa-check-circle"></i> Instalação e Configuração de Softwares</li>
+                                <li><i class="fas fa-check-circle"></i> Suporte Técnico Especializado</li>
+                                <li><i class="fas fa-check-circle"></i> Diagnóstico e Resolução de Problemas</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-network-wired icon-small"></i>
+                            <h2>REDES & SEGURANÇA</h2>
+                            <p>Conectividade segura e confiável para seu negócio</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Redes Estruturadas e Wi-Fi</li>
+                                <li><i class="fas fa-check-circle"></i> Montagem de Rack, Switches e Cabeamento</li>
+                                <li><i class="fas fa-check-circle"></i> Firewall e Segurança da Informação</li>
+                                <li><i class="fas fa-check-circle"></i> Monitoramento de Rede 24/7</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-chart-line icon-small"></i>
+                            <h2>MONITORAMENTO & AUTOMAÇÃO</h2>
+                            <p>Otimize seus processos com automação inteligente</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Zabbix e Grafana para Monitoramento</li>
+                                <li><i class="fas fa-check-circle"></i> Ansible & Automação</li>
+                                <li><i class="fas fa-check-circle"></i> Docker / Docker Compose</li>
+                                <li><i class="fas fa-check-circle"></i> Kubernetes para Orquestração</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-database icon-small"></i>
+                            <h2>ARMAZENAMENTO & BACKUP</h2>
+                            <p>Proteja seus dados com soluções robustas</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Backup Automatizado de Dados</li>
+                                <li><i class="fas fa-check-circle"></i> Storage / NAS Profissional</li>
+                                <li><i class="fas fa-check-circle"></i> Recuperação de Desastres</li>
+                                <li><i class="fas fa-check-circle"></i> Migração de Dados</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-globe icon-small"></i>
+                            <h2>DESENVOLVIMENTO DE SITES</h2>
+                            <p>Presença digital profissional para sua empresa</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Desenvolvimento de Sites Responsivos</li>
+                                <li><i class="fas fa-check-circle"></i> Manutenção e Atualizações</li>
+                                <li><i class="fas fa-check-circle"></i> SEO e Otimização</li>
+                                <li><i class="fas fa-check-circle"></i> Integração com Sistemas</li>
+                            </ul>
+                        </div>
+                        <div class="service-card">
+                            <i class="fas fa-cogs icon-small"></i>
+                            <h2>CONSULTORIA DEVOPS</h2>
+                            <p>Transformação digital com metodologias ágeis</p>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Análise de Processos Atuais</li>
+                                <li><i class="fas fa-check-circle"></i> Implementação de CI/CD</li>
+                                <li><i class="fas fa-check-circle"></i> Cloud Migration Strategy</li>
+                                <li><i class="fas fa-check-circle"></i> Treinamento de Equipes</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="cta-bottom">
+                        <h2>Pronto para Transformar sua TI?</h2>
+                        <p>Entre em contato conosco e descubra como podemos otimizar sua infraestrutura e impulsionar sua produtividade.</p>
+                        <div class="cta-buttons">
+                            <button class="btn btn-primary" onclick="showPage('contato')">(11) 95967-1271</button>
+                            <button class="btn btn-secondary" onclick="showPage('contato')">cabral.douglas@gmail.com</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PÁGINA PORTFÓLIO -->
+    <div id="portfolio" class="page">
+        <main>
+            <section id="portfolio">
+                <div class="container">
+                    <h1>Meu Portfólio</h1>
+                    <p class="subtitle">Alguns dos projetos e experiências mais relevantes da minha carreira</p>
+
+                    <div class="portfolio-grid">
+                        <div class="portfolio-item" data-aos="fade-up">
+                            <div class="portfolio-img">
+                                <img src="images/1.png" alt="Infraestrutura de TI" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Infraestrutura Corporativa</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">Windows Server</span>
+                                    <span class="portfolio-tag">Linux</span>
+                                    <span class="portfolio-tag">VMWare</span>
+                                </div>
+                                <p>Implementação e manutenção de infraestrutura de TI para empresas de médio e grande porte, incluindo servidores, redes e sistemas de backup.</p>
+                                
+                            </div>
+                        </div>
+
+                        <div class="portfolio-item" data-aos="fade-up" data-aos-delay="100">
+                            <div class="portfolio-img">
+                                <img src="images/2.png" alt="Redes e Segurança" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Redes e Segurança</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">Firewall</span>
+                                    <span class="portfolio-tag">Switches</span>
+                                    <span class="portfolio-tag">Wi-Fi</span>
+                                </div>
+                                <p>Projeto e implementação de redes estruturadas com foco em segurança e performance, incluindo configuração de firewalls e políticas de acesso.</p>
+                                
+                            </div>
+                        </div>
+
+                        <div class="portfolio-item" data-aos="fade-up" data-aos-delay="200">
+                            <div class="portfolio-img">
+                                <img src="images/3.png" alt="DevOps e Automação" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Automação DevOps</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">Docker</span>
+                                    <span class="portfolio-tag">Ansible</span>
+                                    <span class="portfolio-tag">Kubernetes</span>
+                                </div>
+                                <p>Implementação de pipelines CI/CD e automação de processos utilizando tecnologias como Docker, Kubernetes e Ansible para otimizar operações.</p>
+                                
+                            </div>
+                        </div>
+
+                        <div class="portfolio-item" data-aos="fade-up">
+                            <div class="portfolio-img">
+                                <img src="images/4.png" alt="Monitoramento" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Sistemas de Monitoramento</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">Zabbix</span>
+                                    <span class="portfolio-tag">Grafana</span>
+                                    <span class="portfolio-tag">Prometheus</span>
+                                </div>
+                                <p>Configuração de sistemas de monitoramento 24/7 com alertas e dashboards personalizados para acompanhamento em tempo real da infraestrutura.</p>
+                                
+                            </div>
+                        </div>
+
+                        <div class="portfolio-item" data-aos="fade-up" data-aos-delay="100">
+                            <div class="portfolio-img">
+                                <img src="images/5.png" alt="Cloud Computing" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Migração para Cloud</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">AWS</span>
+                                    <span class="portfolio-tag">Azure</span>
+                                    <span class="portfolio-tag">GCP</span>
+                                </div>
+                                <p>Projetos de migração de infraestrutura on-premise para ambientes cloud, com otimização de custos e performance.</p>
+                                
+                            </div>
+                        </div>
+
+                        <div class="portfolio-item" data-aos="fade-up" data-aos-delay="200">
+                            <div class="portfolio-img">
+                                <img src="images/6.png" alt="Desenvolvimento" width="640" height="320">
+                            </div>
+                            <div class="portfolio-content">
+                                <h3>Desenvolvimento Web</h3>
+                                <div class="portfolio-tags">
+                                    <span class="portfolio-tag">HTML/CSS</span>
+                                    <span class="portfolio-tag">JavaScript</span>
+                                    <span class="portfolio-tag">PHP</span>
+                                </div>
+                                <p>Criação de sites e aplicações web responsivas com foco em usabilidade e performance.</p>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PÁGINA CONTATO -->
+    <div id="contato" class="page">
+        <main>
+            <section id="contact">
+                <div class="container">
+                    <h1>Entre em Contato</h1>
+                    <p class="subtitle">Vamos conversar sobre como posso ajudar sua empresa com soluções em TI</p>
+
+                    <div class="contact-grid">
+                        <div class="contact-info-card">
+                            <h2>Informações de Contato</h2>
+                            <p><i class="fas fa-phone"></i> Telefone</p>
+                            <p>(11) 95967-1271</p>
+                            <p><i class="fas fa-envelope"></i> Email</p>
+                            <p>cabral.douglas@gmail.com</p>
+                            <p><i class="fas fa-map-marker-alt"></i> Localização</p>
+                            <p>São Paulo, SP</p>
+                            <p><i class="fas fa-clock"></i> Horário</p>
+                            <p>Segunda a Sexta: 8h às 18h</p>
+                            <p>Sábado: 8h às 12h</p>
+                        </div>
+
+                        <div class="contact-form-card">
+                            <h2>Envie uma Mensagem</h2>
+                            <form id="contactForm">
+                                <div class="form-group">
+                                    <label for="name">Nome *</label>
+                                    <input type="text" id="name" name="name" placeholder="Seu nome completo" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Telefone</label>
+                                    <input type="tel" id="phone" name="phone" placeholder="(11) 99999-9999">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email *</label>
+                                    <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="subject">Assunto *</label>
+                                    <input type="text" id="subject" name="subject" placeholder="Como posso ajudar?" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="message">Mensagem *</label>
+                                    <textarea id="message" name="message" rows="5" placeholder="Descreva seu projeto ou necessidade..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Enviar Mensagem</button>
+                            </form>
+                        </div>
+
+                        <div class="why-choose-us-card">
+                            <h2>Por que me escolher?</h2>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Mais de 10 anos de experiência</li>
+                                <li><i class="fas fa-check-circle"></i> Certificações reconhecidas no mercado</li>
+                                <li><i class="fas fa-check-circle"></i> Atendimento personalizado</li>
+                                <li><i class="fas fa-check-circle"></i> Soluções escaláveis e eficientes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">Douglas Cabral</div>
+                <div class="footer-social">
+                    <a href="https://www.instagram.com/yourusername" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.linkedin.com/in/douglasgcabral/" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://github.com/douglasgcabral" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fab fa-github"></i></a>
+                </div>
+                <div class="footer-links">
+                    <a href="#" onclick="showPage('inicio')">Início</a>
+                    <a href="#" onclick="showPage('sobre')">Sobre</a>
+                    <a href="#" onclick="showPage('servicos')">Serviços</a>
+                    <a href="#" onclick="showPage('portfolio')">Portfólio</a>
+                    <a href="#" onclick="showPage('contato')">Contato</a>
+                </div>
+                <div class="copyright">
+                    &copy; 2023 Douglas Cabral. Todos os direitos reservados.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Função para mostrar páginas
+        function showPage(pageId) {
+            // Esconder todas as páginas
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            
+            // Mostrar a página selecionada
+            document.getElementById(pageId).classList.add('active');
+            
+            // Atualizar navegação ativa
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            
+            // Encontrar e ativar o link correspondente
+            const activeLink = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Rolar para o topo
+            window.scrollTo(0, 0);
+        }
+
+        // Formulário de contato
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('contactForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Validação básica
+                    const nome = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const assunto = document.getElementById('subject').value;
+                    const mensagem = document.getElementById('message').value;
+                    
+                    if (!nome || !email || !assunto || !mensagem) {
+                        alert('Por favor, preencha todos os campos obrigatórios.');
+                        return;
+                    }
+                    
+                    // Simulação de envio
+                    alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+                    form.reset();
+                });
+            }
+
+            // Animação de hover nos cards
+            const cards = document.querySelectorAll('.service-item, .service-card, .card, .grid-card, .portfolio-item');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+
+        // Inicializar AOS
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Smooth scrolling para links internos
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('a[href^="#"]')) {
+                e.preventDefault();
+                const target = document.querySelector(e.target.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+
+        // Inicializar Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html>
